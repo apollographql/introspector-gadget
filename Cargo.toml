@@ -5,6 +5,8 @@ edition = "2021"
 license = "MIT"
 description = "GraphQL introspection utilities"
 repository = "https://github.com/apollographql/introspector-gadget"
+authors = ["Apollo Developers <opensource@apollographql.com>"]
+readme = "README.md"
 
 [dependencies]
 apollo-encoder = "0.3.2"

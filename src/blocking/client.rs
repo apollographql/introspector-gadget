@@ -4,7 +4,7 @@ use graphql_client::{Error as GraphQLError, GraphQLQuery, Response as GraphQLRes
 use reqwest::{
     blocking::{Client as ReqwestClient, Response},
     header::{HeaderMap, HeaderValue},
-    Error as ReqwestError, StatusCode,
+    StatusCode,
 };
 
 pub(crate) const JSON_CONTENT_TYPE: &str = "application/json";
@@ -26,11 +26,11 @@ impl GraphQLClient {
     pub fn new(
         graphql_endpoint: &str,
         client: ReqwestClient,
-    ) -> Result<GraphQLClient, ReqwestError> {
-        Ok(GraphQLClient {
+    ) -> GraphQLClient {
+        GraphQLClient {
             graphql_endpoint: graphql_endpoint.to_string(),
             client,
-        })
+        }
     }
 
     /// Client method for making a GraphQL request.
@@ -307,7 +307,7 @@ mod tests {
         });
 
         let client = ReqwestClient::new();
-        let graphql_client = GraphQLClient::new(&server.url(success_path), client).unwrap();
+        let graphql_client = GraphQLClient::new(&server.url(success_path), client);
 
         let response = graphql_client.execute("{}".to_string(), &HeaderMap::new(), true);
 
@@ -328,7 +328,7 @@ mod tests {
 
         let client = ReqwestClient::new();
         let graphql_client =
-            GraphQLClient::new(&server.url(internal_server_error_path), client).unwrap();
+            GraphQLClient::new(&server.url(internal_server_error_path), client);
 
         let response = graphql_client.execute("{}".to_string(), &HeaderMap::new(), true);
 
@@ -348,7 +348,7 @@ mod tests {
         });
 
         let client = ReqwestClient::new();
-        let graphql_client = GraphQLClient::new(&server.url(not_found_path), client).unwrap();
+        let graphql_client = GraphQLClient::new(&server.url(not_found_path), client);
 
         let response = graphql_client.execute("{}".to_string(), &HeaderMap::new(), true);
 
@@ -375,7 +375,7 @@ mod tests {
             .timeout(Duration::from_secs(1))
             .build()
             .unwrap();
-        let graphql_client = GraphQLClient::new(&server.url(timeout_path), client).unwrap();
+        let graphql_client = GraphQLClient::new(&server.url(timeout_path), client);
 
         let response = graphql_client.execute("{}".to_string(), &HeaderMap::new(), true);
 

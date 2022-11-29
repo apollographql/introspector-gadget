@@ -1,0 +1,16 @@
+version: 2.1
+
+jobs:
+  cargo-test:
+    docker:
+      - image: cimg/rust:1.63.0
+    steps:
+      - checkout
+      - run:
+          name: "Compile and run tests"
+          command: "cargo test"
+
+workflows:
+  ci:
+    jobs:
+      - cargo-test

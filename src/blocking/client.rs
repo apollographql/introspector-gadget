@@ -23,10 +23,7 @@ pub struct GraphQLClient {
 impl GraphQLClient {
     /// Construct a new [Client] from a `graphql_endpoint`.
     /// This client is used for generic GraphQL requests, such as introspection.
-    pub fn new(
-        graphql_endpoint: &str,
-        client: ReqwestClient,
-    ) -> GraphQLClient {
+    pub fn new(graphql_endpoint: &str, client: ReqwestClient) -> GraphQLClient {
         GraphQLClient {
             graphql_endpoint: graphql_endpoint.to_string(),
             client,
@@ -220,16 +217,19 @@ impl GraphQLClient {
 fn handle_graphql_body_errors(errors: Vec<GraphQLError>) -> Result<(), RoverClientError> {
     if errors.is_empty() {
         Ok(())
-    } else if errors[0].message.contains("406") {
-        Err(RoverClientError::MalformedKey)
     } else {
-        Err(RoverClientError::GraphQl {
-            msg: errors
-                .into_iter()
-                .map(|error| error.message)
-                .collect::<Vec<String>>()
-                .join("\n"),
-        })
+        tracing::debug!("GraphQL response errors: {:?}", errors);
+        if errors[0].message == "406: Not Acceptable" {
+            Err(RoverClientError::MalformedKey)
+        } else {
+            Err(RoverClientError::GraphQl {
+                msg: errors
+                    .into_iter()
+                    .map(|error| error.message)
+                    .collect::<Vec<String>>()
+                    .join("\n"),
+            })
+        }
     }
 }
 
@@ -327,8 +327,7 @@ mod tests {
         });
 
         let client = ReqwestClient::new();
-        let graphql_client =
-            GraphQLClient::new(&server.url(internal_server_error_path), client);
+        let graphql_client = GraphQLClient::new(&server.url(internal_server_error_path), client);
 
         let response = graphql_client.execute("{}".to_string(), &HeaderMap::new(), true);
 

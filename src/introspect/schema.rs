@@ -182,6 +182,11 @@ impl Schema {
                 if let Some(desc) = type_.description {
                     scalar_def.description(desc);
                 }
+                if let Some(url) = type_.specified_by_url {
+                    let mut specified_by = Directive::new("specifiedBy".into());
+                    specified_by.arg(Argument::new(String::from("url"), Value::String(url)));
+                    scalar_def.directive(specified_by)
+                }
                 sdl.scalar(scalar_def);
             }
             __TypeKind::UNION => {
@@ -1576,6 +1581,528 @@ mod tests {
                TRENDING
              }
          "#}
+        )
+    }
+
+    #[test]
+    fn it_builds_custom_scalars_schema() {
+        let file = File::open("src/introspect/fixtures/custom_scalars.json").unwrap();
+        let res: Response<QueryResponseData> = serde_json::from_reader(file).unwrap();
+
+        let data = res.data.unwrap();
+        let schema = Schema::try_from(data).unwrap();
+        assert_eq!(
+            schema.encode(),
+            indoc! { r#"
+        schema {
+          query: Query
+          mutation: Mutation
+        }
+        """
+        A date-time string at UTC, such as 2007-12-03T10:15:30Z, is compliant with the date-time format outlined in section 5.6 of the RFC 3339
+        profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+        
+        This scalar is a description of an exact instant on the timeline such as the instant that a user account was created.
+        
+        # Input Coercion
+        
+        When expected as an input type, only RFC 3339 compliant date-time strings are accepted. All other input values raise a query error indicating an incorrect type.
+        
+        # Result Coercion
+        
+        Where an RFC 3339 compliant date-time string has a time-zone other than UTC, it is shifted to UTC.
+        For example, the date-time string 2016-01-01T14:10:20+01:00 is shifted to 2016-01-01T13:10:20Z.
+        """
+        scalar DateTime @specifiedBy(url: "https://datatracker.ietf.org/doc/html/rfc3339")
+        "A scalar to validate the email as it is defined in the HTML specification."
+        scalar Email @specifiedBy(url: "https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address")
+        type Comment {
+          author: User
+          body: String!
+          "when the model was created"
+          createdAt: DateTime!
+          "Unique identifier"
+          id: ID!
+          likes: Int
+          post: Post!
+          "when the model was updated"
+          updatedAt: DateTime!
+        }
+        type CommentConnection {
+          edges: [CommentEdge]
+          "Information to aid in pagination"
+          pageInfo: PageInfo!
+        }
+        type CommentCreatePayload {
+          comment: Comment
+        }
+        type CommentDeletePayload {
+          deletedId: ID!
+        }
+        type CommentEdge {
+          cursor: String!
+          node: Comment!
+        }
+        type CommentSearchConnection {
+          edges: [CommentSearchEdge!]!
+          pageInfo: PageInfo!
+          searchInfo: SearchInfo
+        }
+        type CommentSearchEdge {
+          cursor: String!
+          node: Comment!
+          score: Float!
+        }
+        type CommentUpdatePayload {
+          comment: Comment
+        }
+        type Mutation {
+          "Create a Comment"
+          commentCreate(input: CommentCreateInput!): CommentCreatePayload
+          "Delete a Comment by ID or unique field"
+          commentDelete(by: CommentByInput!): CommentDeletePayload
+          "Update a Comment"
+          commentUpdate(by: CommentByInput!, input: CommentUpdateInput!): CommentUpdatePayload
+          "Create a Post"
+          postCreate(input: PostCreateInput!): PostCreatePayload
+          "Delete a Post by ID or unique field"
+          postDelete(by: PostByInput!): PostDeletePayload
+          "Update a Post"
+          postUpdate(by: PostByInput!, input: PostUpdateInput!): PostUpdatePayload
+          "Create a User"
+          userCreate(input: UserCreateInput!): UserCreatePayload
+          "Delete a User by ID or unique field"
+          userDelete(by: UserByInput!): UserDeletePayload
+          "Update a User"
+          userUpdate(by: UserByInput!, input: UserUpdateInput!): UserUpdatePayload
+        }
+        type PageInfo {
+          endCursor: String
+          hasNextPage: Boolean!
+          hasPreviousPage: Boolean!
+          startCursor: String
+        }
+        type Post {
+          author: User
+          comments(after: String, before: String, first: Int, last: Int, orderBy: PostOrderByInput): CommentConnection
+          content: String
+          "when the model was created"
+          createdAt: DateTime!
+          "Unique identifier"
+          id: ID!
+          likes: Int
+          publishedAt: DateTime
+          slug: String!
+          tags: [String]
+          title: String!
+          "when the model was updated"
+          updatedAt: DateTime!
+        }
+        type PostConnection {
+          edges: [PostEdge]
+          "Information to aid in pagination"
+          pageInfo: PageInfo!
+        }
+        type PostCreatePayload {
+          post: Post
+        }
+        type PostDeletePayload {
+          deletedId: ID!
+        }
+        type PostEdge {
+          cursor: String!
+          node: Post!
+        }
+        type PostSearchConnection {
+          edges: [PostSearchEdge!]!
+          pageInfo: PageInfo!
+          searchInfo: SearchInfo
+        }
+        type PostSearchEdge {
+          cursor: String!
+          node: Post!
+          score: Float!
+        }
+        type PostUpdatePayload {
+          post: Post
+        }
+        type Query {
+          "Query a single Comment by an ID or a unique field"
+          comment(
+            "The field and value by which to query the Comment"
+            by: CommentByInput!
+          ): Comment
+          "Paginated query to fetch the whole list of `Comment`."
+          commentCollection(after: String, before: String, first: Int, last: Int, orderBy: CommentOrderByInput): CommentConnection
+          "Search `Comment`"
+          commentSearch(after: String, before: String, 
+            "Fields used for searching. Restricted to String, URL, Email and PhoneNumber fields. If not specified it defaults to all @search fields with those types."
+            fields: [String!],filter: CommentSearchFilterInput, first: Int, last: Int, 
+            "Text to search."
+            query: String
+          ): CommentSearchConnection
+          "Query a single Post by an ID or a unique field"
+          post(
+            "The field and value by which to query the Post"
+            by: PostByInput!
+          ): Post
+          "Paginated query to fetch the whole list of `Post`."
+          postCollection(after: String, before: String, first: Int, last: Int, orderBy: PostOrderByInput): PostConnection
+          "Search `Post`"
+          postSearch(after: String, before: String, 
+            "Fields used for searching. Restricted to String, URL, Email and PhoneNumber fields. If not specified it defaults to all @search fields with those types."
+            fields: [String!],filter: PostSearchFilterInput, first: Int, last: Int, 
+            "Text to search."
+            query: String
+          ): PostSearchConnection
+          "Query a single User by an ID or a unique field"
+          user(
+            "The field and value by which to query the User"
+            by: UserByInput!
+          ): User
+          "Paginated query to fetch the whole list of `User`."
+          userCollection(after: String, before: String, first: Int, last: Int, orderBy: UserOrderByInput): UserConnection
+        }
+        type SearchInfo {
+          totalHits: Int!
+        }
+        type User {
+          comments(after: String, before: String, first: Int, last: Int, orderBy: UserOrderByInput): CommentConnection
+          "when the model was created"
+          createdAt: DateTime!
+          email: Email
+          "Unique identifier"
+          id: ID!
+          name: String!
+          posts(after: String, before: String, first: Int, last: Int, orderBy: UserOrderByInput): PostConnection
+          "when the model was updated"
+          updatedAt: DateTime!
+        }
+        type UserConnection {
+          edges: [UserEdge]
+          "Information to aid in pagination"
+          pageInfo: PageInfo!
+        }
+        type UserCreatePayload {
+          user: User
+        }
+        type UserDeletePayload {
+          deletedId: ID!
+        }
+        type UserEdge {
+          cursor: String!
+          node: User!
+        }
+        type UserUpdatePayload {
+          user: User
+        }
+        enum OrderByDirection {
+          ASC
+          DESC
+        }
+        input CommentByInput {
+          id: ID
+        }
+        "Input to create a Comment"
+        input CommentCreateInput {
+          author: CommentToUserCreateUserRelation
+          body: String!
+          likes: Int = 0
+          post: CommentToPostCreatePostRelation!
+        }
+        input CommentOrderByInput {
+          createdAt: OrderByDirection
+        }
+        ""
+        input CommentSearchFilterInput {
+          ALL: [CommentSearchFilterInput!]
+          ANY: [CommentSearchFilterInput!]
+          NONE: [CommentSearchFilterInput!]
+          NOT: CommentSearchFilterInput
+          body: StringSearchFilterInput
+          createdAt: DateTimeSearchFilterInput
+          likes: IntOrNullSearchFilterInput
+          updatedAt: DateTimeSearchFilterInput
+        }
+        "Input to create a Comment for the CommentToPost relation of Post"
+        input CommentToPostCreateComment {
+          author: CommentToUserCreateUserRelation
+          body: String!
+          likes: Int = 0
+        }
+        "Input to link to or create a Comment for the CommentToPost relation of Post"
+        input CommentToPostCreateCommentRelation {
+          create: CommentToPostCreateComment
+          link: ID
+        }
+        "Input to create a Post for the CommentToPost relation of Comment"
+        input CommentToPostCreatePost {
+          author: PostToUserCreateUserRelation
+          comments: [CommentToPostCreateCommentRelation]
+          content: String
+          likes: Int = 0
+          publishedAt: DateTime
+          slug: String!
+          tags: [String]
+          title: String!
+        }
+        "Input to link to or create a Post for the CommentToPost relation of Comment"
+        input CommentToPostCreatePostRelation {
+          create: CommentToPostCreatePost
+          link: ID
+        }
+        "Input to link/unlink to or create a Comment for the CommentToPost relation of Post"
+        input CommentToPostUpdateCommentRelation {
+          create: CommentToPostCreateComment
+          link: ID
+          unlink: ID
+        }
+        "Input to link/unlink to or create a Post for the CommentToPost relation of Comment"
+        input CommentToPostUpdatePostRelation {
+          create: CommentToPostCreatePost
+          link: ID
+          unlink: ID
+        }
+        "Input to create a Comment for the CommentToUser relation of User"
+        input CommentToUserCreateComment {
+          body: String!
+          likes: Int = 0
+          post: CommentToPostCreatePostRelation!
+        }
+        "Input to link to or create a Comment for the CommentToUser relation of User"
+        input CommentToUserCreateCommentRelation {
+          create: CommentToUserCreateComment
+          link: ID
+        }
+        "Input to create a User for the CommentToUser relation of Comment"
+        input CommentToUserCreateUser {
+          comments: [CommentToUserCreateCommentRelation]
+          email: Email
+          name: String!
+          posts: [PostToUserCreatePostRelation]
+        }
+        "Input to link to or create a User for the CommentToUser relation of Comment"
+        input CommentToUserCreateUserRelation {
+          create: CommentToUserCreateUser
+          link: ID
+        }
+        "Input to link/unlink to or create a Comment for the CommentToUser relation of User"
+        input CommentToUserUpdateCommentRelation {
+          create: CommentToUserCreateComment
+          link: ID
+          unlink: ID
+        }
+        "Input to link/unlink to or create a User for the CommentToUser relation of Comment"
+        input CommentToUserUpdateUserRelation {
+          create: CommentToUserCreateUser
+          link: ID
+          unlink: ID
+        }
+        "Input to update a Comment"
+        input CommentUpdateInput {
+          author: CommentToUserUpdateUserRelation
+          body: String
+          likes: IntOperationsInput
+          post: CommentToPostUpdatePostRelation
+        }
+        ""
+        input DateTimeOrNullSearchFilterInput {
+          ALL: [DateTimeOrNullSearchFilterInput!]
+          ANY: [DateTimeOrNullSearchFilterInput!]
+          NONE: [DateTimeOrNullSearchFilterInput!]
+          NOT: DateTimeOrNullSearchFilterInput
+          eq: DateTime
+          gt: DateTime
+          gte: DateTime
+          in: [DateTime!]
+          isNull: Boolean
+          lt: DateTime
+          lte: DateTime
+          neq: DateTime
+          notIn: [DateTime!]
+        }
+        ""
+        input DateTimeSearchFilterInput {
+          ALL: [DateTimeSearchFilterInput!]
+          ANY: [DateTimeSearchFilterInput!]
+          NONE: [DateTimeSearchFilterInput!]
+          NOT: DateTimeSearchFilterInput
+          eq: DateTime
+          gt: DateTime
+          gte: DateTime
+          in: [DateTime!]
+          lt: DateTime
+          lte: DateTime
+          neq: DateTime
+          notIn: [DateTime!]
+        }
+        "Possible operations for an Int field"
+        input IntOperationsInput {
+          decrement: Int
+          increment: Int
+          set: Int
+        }
+        ""
+        input IntOrNullSearchFilterInput {
+          ALL: [IntOrNullSearchFilterInput!]
+          ANY: [IntOrNullSearchFilterInput!]
+          NONE: [IntOrNullSearchFilterInput!]
+          NOT: IntOrNullSearchFilterInput
+          eq: Int
+          gt: Int
+          gte: Int
+          in: [Int!]
+          isNull: Boolean
+          lt: Int
+          lte: Int
+          neq: Int
+          notIn: [Int!]
+        }
+        input PostByInput {
+          id: ID
+          slug: String
+        }
+        "Input to create a Post"
+        input PostCreateInput {
+          author: PostToUserCreateUserRelation
+          comments: [CommentToPostCreateCommentRelation]
+          content: String
+          likes: Int = 0
+          publishedAt: DateTime
+          slug: String!
+          tags: [String]
+          title: String!
+        }
+        input PostOrderByInput {
+          createdAt: OrderByDirection
+        }
+        ""
+        input PostSearchFilterInput {
+          ALL: [PostSearchFilterInput!]
+          ANY: [PostSearchFilterInput!]
+          NONE: [PostSearchFilterInput!]
+          NOT: PostSearchFilterInput
+          content: StringOrNullSearchFilterInput
+          createdAt: DateTimeSearchFilterInput
+          likes: IntOrNullSearchFilterInput
+          publishedAt: DateTimeOrNullSearchFilterInput
+          slug: StringSearchFilterInput
+          tags: StringListSearchFilterInput
+          title: StringSearchFilterInput
+          updatedAt: DateTimeSearchFilterInput
+        }
+        "Input to create a Post for the PostToUser relation of User"
+        input PostToUserCreatePost {
+          comments: [CommentToPostCreateCommentRelation]
+          content: String
+          likes: Int = 0
+          publishedAt: DateTime
+          slug: String!
+          tags: [String]
+          title: String!
+        }
+        "Input to link to or create a Post for the PostToUser relation of User"
+        input PostToUserCreatePostRelation {
+          create: PostToUserCreatePost
+          link: ID
+        }
+        "Input to create a User for the PostToUser relation of Post"
+        input PostToUserCreateUser {
+          comments: [CommentToUserCreateCommentRelation]
+          email: Email
+          name: String!
+          posts: [PostToUserCreatePostRelation]
+        }
+        "Input to link to or create a User for the PostToUser relation of Post"
+        input PostToUserCreateUserRelation {
+          create: PostToUserCreateUser
+          link: ID
+        }
+        "Input to link/unlink to or create a Post for the PostToUser relation of User"
+        input PostToUserUpdatePostRelation {
+          create: PostToUserCreatePost
+          link: ID
+          unlink: ID
+        }
+        "Input to link/unlink to or create a User for the PostToUser relation of Post"
+        input PostToUserUpdateUserRelation {
+          create: PostToUserCreateUser
+          link: ID
+          unlink: ID
+        }
+        "Input to update a Post"
+        input PostUpdateInput {
+          author: PostToUserUpdateUserRelation
+          comments: [CommentToPostUpdateCommentRelation]
+          content: String
+          likes: IntOperationsInput
+          publishedAt: DateTime
+          slug: String
+          tags: [String]
+          title: String
+        }
+        ""
+        input StringListSearchFilterInput {
+          includes: StringSearchFilterInput
+          includesNone: StringSearchFilterInput
+          isEmpty: Boolean
+        }
+        ""
+        input StringOrNullSearchFilterInput {
+          ALL: [StringOrNullSearchFilterInput!]
+          ANY: [StringOrNullSearchFilterInput!]
+          NONE: [StringOrNullSearchFilterInput!]
+          NOT: StringOrNullSearchFilterInput
+          eq: String
+          gt: String
+          gte: String
+          in: [String!]
+          isNull: Boolean
+          lt: String
+          lte: String
+          neq: String
+          notIn: [String!]
+        }
+        ""
+        input StringSearchFilterInput {
+          ALL: [StringSearchFilterInput!]
+          ANY: [StringSearchFilterInput!]
+          NONE: [StringSearchFilterInput!]
+          NOT: StringSearchFilterInput
+          eq: String
+          gt: String
+          gte: String
+          in: [String!]
+          lt: String
+          lte: String
+          neq: String
+          notIn: [String!]
+        }
+        input UserByInput {
+          id: ID
+        }
+        "Input to create a User"
+        input UserCreateInput {
+          comments: [CommentToUserCreateCommentRelation]
+          email: Email
+          name: String!
+          posts: [PostToUserCreatePostRelation]
+        }
+        input UserOrderByInput {
+          createdAt: OrderByDirection
+        }
+        "Input to update a User"
+        input UserUpdateInput {
+          comments: [CommentToUserUpdateCommentRelation]
+          email: Email
+          name: String
+          posts: [PostToUserUpdatePostRelation]
+        }
+        "Directs the executor to return values as a Streaming response."
+        directive @live on QUERY
+        "Indicates that an input object is a oneOf input object"
+        directive @oneOf on INPUT_OBJECT
+        "# }
         )
     }
 }

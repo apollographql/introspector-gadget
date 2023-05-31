@@ -9,7 +9,7 @@ authors = ["Apollo Developers <opensource@apollographql.com>"]
 readme = "README.md"
 
 [dependencies]
-apollo-encoder = "0.4.0"
+apollo-encoder = "0.5"
 backoff = "0.4"
 graphql_client = "0.13"
 hyper = "0.14"

@@ -46,6 +46,8 @@ type __Type {
   # eslint-disable-next-line
   "NON_NULL and LIST only"
   ofType: __Type
+
+  specifiedByURL: String
 }
 
 # eslint-disable-next-line

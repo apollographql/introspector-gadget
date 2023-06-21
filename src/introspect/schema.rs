@@ -250,6 +250,9 @@ impl Schema {
         if let Some(desc) = field.description {
             field_def.description(desc);
         }
+        if field.is_deprecated {
+            field_def.directive(create_deprecated_directive(field.deprecation_reason));
+        }
         field_def
     }
 

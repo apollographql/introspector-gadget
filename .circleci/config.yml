@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   cargo-test:
     docker:
-      - image: cimg/rust:1.63.0
+      - image: cimg/rust:1.70.0
     steps:
       - checkout
       - run:
